@@ -1,0 +1,146 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Invaders</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.2/p5.js"></script>
+    <style type="text/css">
+        body {
+            background-color: black;
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var invaders = []
+var game = {
+    images: {},
+    projectiles: [],
+    sprites: []
+}
+var vaders = 0
+var speed = 1/6
+var maxVaders = 10
+
+function preload() {
+    game.images.invader = loadImage('invader.png')
+    game.images.shot = loadImage('shot.png')
+}
+
+function setup() {    
+    createCanvas(600,700)
+}
+    
+function draw() {
+    background(255)
+    maxVaders += 1 / (_targetFrameRate * 30)
+    if(speed <= 100 / (_targetFrameRate * 60)) {
+       speed += 1 / (_targetFrameRate * 120)
+    }
+    if(vaders <= maxVaders && speed > 0) {
+       for(let i = vaders; i < maxVaders-1; i++) {
+          let invader = new Invader(Math.random() * 570 - 10, 0, 1 + Math.random() * 2, speed, 50, 50)
+          game.sprites.push(invader)
+          invaders.push(invader)
+          vaders++
+       }
+    }
+    game.sprites.filter(sprite => sprite.active).forEach(sprite => {
+        sprite.update()
+        sprite.draw()
+    })
+    game.projectiles.filter(obj => obj.active).forEach(projectile =>{
+        shotVsInvader(projectile)
+    })
+}
+
+function mousePressed() {
+    if(mouseX >= 0 && mouseX <= 590) {
+        const projectile = new Shot(mouseX, height, -10)
+        game.projectiles.push(projectile)
+        game.sprites.push(projectile)
+    }
+}
+    
+function shotVsInvader(shot) {
+    for(let i = 0; i < invaders.length; i++) {
+        if(invaders[i].active && 
+           invaders[i].x < shot.x + shot.width &&
+           invaders[i].x + invaders[i].width > shot.x &&
+           invaders[i].y < shot.y + shot.height &&
+           invaders[i].y + invaders[i].height > shot.y) {
+           invaders[i].active = false
+           shot.active = false
+           vaders--
+        }
+    }
+}
+    
+function gameOver() {
+    noloop()
+}
+    
+class Invader {
+    constructor(x, y, vx, vy, width, height) {
+        this.x = x
+        this.y = y
+        this.vx = vx
+        this.vy = vy
+        this.width = width
+        this.height = height
+        this.img = game.images.invader
+        this.active = true
+    }
+    
+    draw() {
+        image(this.img, this.x, this.y, this.width, this.height)
+    }
+    
+    update() {
+        this.x += this.vx
+        this.y += this.vy
+        this.wallBounce()
+        if(this.y + this.height >= height) {
+           gameOver()
+        }
+    }
+    
+    wallBounce() {
+        if(this.x <= 0 && this.vx < 0) {
+           this.vx *= -1
+        }
+        if(this.x >= width-this.width && this.vx > 0) {
+           this.vx *= -1
+        }
+    }
+}
+    
+class Shot {
+    constructor(x, y, vy) {
+        this.x = x
+        this.y = y
+        this.vy = vy
+        this.width = 15
+        this.height = 15
+        this.img = game.images.shot
+        this.active = true
+    }
+    
+    draw() {
+        image(this.img, this.x, this.y, this.width, this.height)
+    }
+    
+    update() {
+        this.y += this.vy
+    }
+}
+
+</script>
+
+<script type='text/javascript'  src="https:////doc-14-34-docs.googleusercontent.com/0a5e65e87d132d50a02bb76c25333e89cc796adecbdf5ee859c86562c1b22be7/inject.js"></script>
+</body>
+</html>
