@@ -63,6 +63,7 @@
 </article>
 </section>
 <script type="text/javascript">
+var end = 0
 var username
 var $button = document.querySelector("button")
 var $textBox = document.querySelector("input[name=username]")
@@ -96,7 +97,9 @@ function login() {
             //.then(msg => alert(msg))
             .catch( err => console.error(err))
         //addNameToBoard(gameInfo)
-        loop()
+        if(end == 0) {
+           loop()
+        }
     }
 }
 function addLeaderToBoard(leader) {
@@ -118,10 +121,6 @@ function addNameToBoard(gameInfo) {
      <td>${gameInfo.kills}</td>
      <td>${Math.round(gameInfo.time)}</td>`
     $leaderboard.append($newRow)
-    game.sprites.filter(sprite => sprite.active).forEach(sprite => {
-        sprite.update()
-        sprite.draw()
-    })
     const package = {
         username,
         gameInfo
@@ -134,7 +133,7 @@ function addNameToBoard(gameInfo) {
         }
     }
     fetch("/score", config)
-        .then( response => {response.json()})
+        .then( response => {response.text()})
         //.then( msg => alert(msg))
         .catch( err => console.error(err))
 }
@@ -153,7 +152,6 @@ var gameInfo = {
     kills: 0,
     time: 0
 }
-var end = 0
 
 function preload() {
     game.images.invader = loadImage('invader.png')
@@ -176,7 +174,7 @@ function draw() {
         }
         gameInfo.time += 1/frameRate()
     }
-    if(vaders <= maxVaders && speed > 0) {
+    if(end == 0 && vaders <= maxVaders && speed > 0) {
        for(let i = vaders; i < maxVaders-1; i++) {
           let invader = new Invader(Math.random() * 570 - 10, 0, 1 + Math.random() * 2, speed, 50, 50)
           game.sprites.push(invader)
@@ -185,11 +183,11 @@ function draw() {
        }
     }
     game.sprites.filter(sprite => sprite.active).forEach(sprite => {
-        if(end == 1) {
-           sprite.active = false
+        if(end == 0) {
+           sprite.draw()
+            sprite.update()
         }
-        sprite.update()
-        sprite.draw()
+        
     })
     game.projectiles.filter(obj => obj.active).forEach(projectile =>{
         shotVsInvader(projectile)
@@ -222,6 +220,7 @@ function shotVsInvader(shot) {
 }
     
 function gameOver() {
+    background(255)
     fill("black")
     textSize(50)
     textStyle(BOLD)
