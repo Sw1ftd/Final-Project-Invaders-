@@ -7,14 +7,137 @@
     <style type="text/css">
         body {
             background-color: black;
+            color: white;
             margin: 0;
             text-align: center;
+            background-image:url(space.png);
+            background-size: cover;
         }
+        canvas {
+            border: 8px groove lightgreen;
+        }
+        table {
+            text-align: center;
+            margin: 1px auto;
+            font-family: sans-serif;
+        }
+        td, th {
+            padding: 10px;
+            border: 5px groove lightgreen;
+            background-color: grey;
+        }
+        h1,h2 {
+            background-color: grey;
+            margin: 5px auto;
+            padding: 10px;
+            width: 10em;
+            border: 5px groove blue;
+        }
+        section {
+            display: flex;
+            flex-direction: row;
+        }
+        article {
+            flex: 33%;
+        }
+        
     </style>
 </head>
 <body>
-
+<header><h1>Invaders</h1></header>
+<section id="section">
+<article>
+<h2>Leaderboard:</h2>
+<div id="login">
+    <input name="username"/>
+    <button>Login to Start</button>
+</div>
+<table>
+    <tr>
+        <th>Username</th>
+        <th>Score</th>
+        <th>Kills</th>
+        <th>Time Survived (Seconds)</th>
+    </tr>
+</table>
+</article>
+</section>
 <script type="text/javascript">
+var username
+var $button = document.querySelector("button")
+var $textBox = document.querySelector("input[name=username]")
+$button.onclick = login
+    
+fetch("/leaders")
+    .then( response => response.json() )
+    .then( leaders => {
+        console.log(leaders)
+        leaders.forEach( leader => addLeaderToBoard(leader) )
+    })
+    .catch( err => console.error(err) ) 
+    
+function login() {
+    username = $textBox.value
+    if(username != "") {
+        //POST username to server
+        const package = {
+            username
+            
+        }
+        const config = {
+            method: "POST",
+            body: JSON.stringify(package),
+            headers: {
+                "Content-Type":"application/json"
+            }
+        }
+        fetch("/login", config)
+            .then( response => {response.json()})
+            //.then(msg => alert(msg))
+            .catch( err => console.error(err))
+        //addNameToBoard(gameInfo)
+        loop()
+    }
+}
+function addLeaderToBoard(leader) {
+    let $leaderboard = document.querySelector("table")
+    let $newRow = document.createElement("tr")
+    $newRow.innerHTML = 
+    `<td>${leader.username}</td>
+     <td>${leader.gameInfo.score}</td>
+     <td>${leader.gameInfo.kills}</td>
+     <td>${Math.round(leader.gameInfo.time)}</td>`
+    $leaderboard.append($newRow)
+}
+function addNameToBoard(gameInfo) {
+    let $leaderboard = document.querySelector("table")
+    let $newRow = document.createElement("tr")
+    $newRow.innerHTML = 
+    `<td>${username}</td>
+     <td>${gameInfo.score}</td>
+     <td>${gameInfo.kills}</td>
+     <td>${Math.round(gameInfo.time)}</td>`
+    $leaderboard.append($newRow)
+    game.sprites.filter(sprite => sprite.active).forEach(sprite => {
+        sprite.update()
+        sprite.draw()
+    })
+    const package = {
+        username,
+        gameInfo
+    }
+    const config = {
+        method: "POST",
+        body: JSON.stringify(package),
+        headers: {
+            "Content-Type":"application/json"
+        }
+    }
+    fetch("/score", config)
+        .then( response => {response.json()})
+        //.then( msg => alert(msg))
+        .catch( err => console.error(err))
+}
 
 var invaders = []
 var game = {
@@ -25,6 +148,12 @@ var game = {
 var vaders = 0
 var speed = 1/6
 var maxVaders = 10
+var gameInfo = {
+    score: 0,
+    kills: 0,
+    time: 0
+}
+var end = 0
 
 function preload() {
     game.images.invader = loadImage('invader.png')
@@ -32,14 +161,20 @@ function preload() {
 }
 
 function setup() {    
-    createCanvas(600,700)
+    createCanvas(600,600)
+    .parent("#section")
+    document.querySelector("section#section").append(document.createElement("article"))
+    noLoop()
 }
     
 function draw() {
     background(255)
-    maxVaders += 1 / (_targetFrameRate * 30)
-    if(speed <= 100 / (_targetFrameRate * 60)) {
-       speed += 1 / (_targetFrameRate * 120)
+    if(frameRate() > 0) {
+        maxVaders += 1 / (frameRate() * 30)
+        if(speed <= 10) {
+           speed += 1 / (frameRate() * 180)
+        }
+        gameInfo.time += 1/frameRate()
     }
     if(vaders <= maxVaders && speed > 0) {
        for(let i = vaders; i < maxVaders-1; i++) {
@@ -50,17 +185,21 @@ function draw() {
        }
     }
     game.sprites.filter(sprite => sprite.active).forEach(sprite => {
+        if(end == 1) {
+           sprite.active = false
+        }
         sprite.update()
         sprite.draw()
     })
     game.projectiles.filter(obj => obj.active).forEach(projectile =>{
         shotVsInvader(projectile)
     })
+    
 }
 
 function mousePressed() {
-    if(mouseX >= 0 && mouseX <= 590) {
-        const projectile = new Shot(mouseX, height, -10)
+    if(mouseX >= 0 && mouseX <= width) {
+        const projectile = new Shot(mouseX-10, height, -10)
         game.projectiles.push(projectile)
         game.sprites.push(projectile)
     }
@@ -76,12 +215,21 @@ function shotVsInvader(shot) {
            invaders[i].active = false
            shot.active = false
            vaders--
+           gameInfo.score += Math.round(Math.random() * 40) + 10
+           gameInfo.kills++
         }
     }
 }
     
 function gameOver() {
-    noloop()
+    fill("black")
+    textSize(50)
+    textStyle(BOLD)
+    text("Game Over", width/2-130, height/2-50)
+    text("Try Again", width/2-110, height/2+10)
+    gameInfo.score += Math.round(gameInfo.time)*10
+    addNameToBoard(gameInfo)
+    noLoop()
 }
     
 class Invader {
@@ -104,7 +252,8 @@ class Invader {
         this.x += this.vx
         this.y += this.vy
         this.wallBounce()
-        if(this.y + this.height >= height) {
+        if(end == 0 && this.y + this.height >= height) {
+           end++
            gameOver()
         }
     }
