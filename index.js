@@ -5,6 +5,7 @@ const app = express()
 
 let users = []
 let leaderboard = []
+let top10 = []
 
 //Parse request data coming in
 app.use(express.json())

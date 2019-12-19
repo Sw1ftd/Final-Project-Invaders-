@@ -72,7 +72,6 @@ $button.onclick = login
 fetch("/leaders")
     .then( response => response.json() )
     .then( leaders => {
-        console.log(leaders)
         leaders.forEach( leader => addLeaderToBoard(leader) )
     })
     .catch( err => console.error(err) ) 
